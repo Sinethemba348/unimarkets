@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>UniMarket Eswatini — Student Marketplace</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0d0d0d; --card: #161616; --card2: #1e1e1e; --border: #2a2a2a;
+    --accent: #ff6b2b; --accent2: #ffce00; --purple: #a855f7;
+    --text: #f0f0f0; --muted: #888; --success: #22c55e; --danger: #ef4444;
+    --radius: 14px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; overflow-x: hidden; }
+  h1,h2,h3,h4 { font-family: 'Syne', sans-serif; }
+
+  .screen { display: none; min-height: 100vh; animation: fadeIn .35s ease; }
+  .screen.active { display: block; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 32px; border-bottom: 1px solid var(--border);
+    background: rgba(13,13,13,0.96); backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 100; flex-wrap: wrap; gap: 10px;
+  }
+  .logo { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800; }
+  .logo span:first-child { color: var(--accent); }
+  .logo span:last-child { color: var(--accent2); }
+  .nav-links { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .nav-links button {
+    background: none; border: 1px solid var(--border); color: var(--text);
+    padding: 7px 14px; border-radius: 99px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: .82rem; transition: all .2s;
+  }
+  .nav-links button:hover, .nav-links button.active-nav { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .nav-links .admin-btn { border-color: var(--purple); color: var(--purple); }
+  .nav-links .admin-btn:hover { background: var(--purple); color: #fff; }
+  .badge { background: var(--accent); color: #fff; border-radius: 99px; font-size: .68rem; padding: 2px 7px; font-weight: 700; margin-left: 4px; }
+
+  /* LOADING OVERLAY */
+  .loading-overlay {
+    position: fixed; inset: 0; background: rgba(13,13,13,.85);
+    z-index: 500; display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 14px; backdrop-filter: blur(4px);
+  }
+  .loading-overlay.hidden { display: none; }
+  .spinner {
+    width: 40px; height: 40px; border: 3px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-overlay p { font-size: .9rem; color: var(--muted); }
+
+  .hero {
+    padding: 80px 32px 60px;
+    background: radial-gradient(ellipse 80% 60% at 60% 0%, rgba(255,107,43,.13) 0%, transparent 70%),
+                radial-gradient(ellipse 50% 40% at 10% 80%, rgba(168,85,247,.1) 0%, transparent 70%);
+    text-align: center;
+  }
+  .hero h1 { font-size: clamp(2rem, 6vw, 4rem); font-weight: 800; line-height: 1.1; }
+  .hero h1 em { color: var(--accent); font-style: normal; }
+  .hero p { color: var(--muted); max-width: 540px; margin: 18px auto 36px; font-size: 1.05rem; line-height: 1.6; }
+  .hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  .btn {
+    padding: 11px 26px; border-radius: 99px; border: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: .9rem;
+    transition: all .25s; display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #e85520; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255,107,43,.3); }
+  .btn-secondary { background: var(--card2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-success:hover { background: #16a34a; }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-danger:hover { background: #dc2626; }
+
+  .stats-bar {
+    display: flex; border: 1px solid var(--border); border-radius: var(--radius);
+    overflow: hidden; max-width: 560px; margin: 44px auto 0;
+  }
+  .stat-item { flex: 1; padding: 18px; text-align: center; border-right: 1px solid var(--border); }
+  .stat-item:last-child { border-right: none; }
+  .stat-item .num { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 800; color: var(--accent); }
+  .stat-item .lbl { font-size: .72rem; color: var(--muted); margin-top: 3px; }
+
+  .section { padding: 40px 32px; max-width: 1200px; margin: 0 auto; }
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
+  .section-header h2 { font-size: 1.45rem; font-weight: 800; }
+  .section-header h2 span { color: var(--accent); }
+
+  .search-bar { display: flex; gap: 10px; margin-bottom: 28px; flex-wrap: wrap; }
+  .search-bar input, .search-bar select {
+    flex: 1; min-width: 160px; padding: 10px 16px;
+    background: var(--card); border: 1px solid var(--border); border-radius: 99px;
+    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: .88rem;
+    outline: none; transition: border-color .2s;
+  }
+  .search-bar input:focus, .search-bar select:focus { border-color: var(--accent); }
+  .search-bar select option { background: #222; }
+
+  .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 18px; }
+  .product-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    overflow: hidden; transition: all .25s; cursor: pointer;
+  }
+  .product-card:hover { border-color: var(--accent); transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,.4); }
+  .product-img {
+    height: 170px; background: linear-gradient(135deg, var(--card2) 0%, #252525 100%);
+    display: flex; align-items: center; justify-content: center; font-size: 3.2rem; position: relative;
+  }
+  .commission-tag {
+    position: absolute; top: 10px; right: 10px;
+    background: rgba(0,0,0,.75); border: 1px solid var(--border);
+    color: var(--accent2); font-size: .65rem; padding: 3px 8px; border-radius: 99px; font-weight: 700;
+  }
+  .product-info { padding: 14px 16px 16px; }
+  .product-info h4 { font-size: .92rem; font-weight: 700; margin-bottom: 4px; }
+  .product-info .seller { font-size: .76rem; color: var(--muted); margin-bottom: 10px; }
+  .product-info .price { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 800; color: var(--accent2); }
+  .cat-tag { display: inline-block; background: rgba(255,107,43,.12); color: var(--accent); border-radius: 99px; font-size: .68rem; padding: 3px 10px; margin-top: 8px; }
+
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.8);
+    z-index: 200; align-items: center; justify-content: center; padding: 20px;
+    backdrop-filter: blur(6px);
+  }
+  .modal-overlay.open { display: flex; animation: fadeIn .25s ease; }
+  .modal {
+    background: var(--card); border: 1px solid var(--border); border-radius: 20px;
+    width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; padding: 30px;
+  }
+  .modal h3 { font-size: 1.2rem; font-weight: 800; margin-bottom: 20px; }
+  .modal h3 span { color: var(--accent); }
+
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: .8rem; color: var(--muted); margin-bottom: 5px; font-weight: 500; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 10px 13px;
+    background: var(--card2); border: 1px solid var(--border); border-radius: 10px;
+    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: .88rem;
+    outline: none; transition: border-color .2s; resize: vertical;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); }
+  .form-group select option { background: #222; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .payment-methods { display: grid; grid-template-columns: repeat(3,1fr); gap: 9px; margin-bottom: 16px; }
+  .pay-option { border: 2px solid var(--border); border-radius: 10px; padding: 12px 8px; text-align: center; cursor: pointer; transition: all .2s; }
+  .pay-option:hover { border-color: var(--accent); }
+  .pay-option.selected { border-color: var(--accent); background: rgba(255,107,43,.08); }
+  .pay-option .pay-icon { font-size: 1.5rem; margin-bottom: 5px; }
+  .pay-option .pay-name { font-size: .72rem; font-weight: 700; }
+  .pay-option .pay-sub { font-size: .62rem; color: var(--muted); }
+
+  .commission-box {
+    background: linear-gradient(135deg, rgba(255,206,0,.05), rgba(255,107,43,.05));
+    border: 1px solid rgba(255,206,0,.2); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px;
+  }
+  .commission-box .row { display: flex; justify-content: space-between; font-size: .85rem; margin-bottom: 5px; }
+  .commission-box .row:last-child { margin: 0; font-weight: 700; }
+  .commission-box .label { color: var(--muted); }
+  .commission-box .val { color: var(--accent2); }
+
+  .upload-area {
+    border: 2px dashed var(--border); border-radius: 10px; padding: 28px;
+    text-align: center; cursor: pointer; transition: all .2s; margin-bottom: 16px;
+  }
+  .upload-area:hover { border-color: var(--accent); background: rgba(255,107,43,.04); }
+  .upload-area .upload-icon { font-size: 2rem; margin-bottom: 8px; }
+  .upload-area p { font-size: .83rem; color: var(--muted); }
+
+  .admin-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin-bottom: 28px; }
+  .admin-stat { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; text-align: center; }
+  .admin-stat .num { font-family: 'Syne', sans-serif; font-size: 1.7rem; font-weight: 800; color: var(--accent); }
+  .admin-stat .lbl { font-size: .72rem; color: var(--muted); margin-top: 4px; }
+  .admin-stat.revenue .num { color: var(--success); }
+  .admin-stat.pending-s .num { color: var(--accent2); }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 24px; flex-wrap: wrap; }
+  .tab-btn { padding: 8px 16px; border-radius: 99px; border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: .82rem; font-weight: 500; transition: all .2s; }
+  .tab-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; animation: fadeIn .3s ease; }
+
+  .admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; }
+  .pending-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+  .pending-card .ph { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 10px; }
+  .pending-card .emoji { font-size: 2rem; }
+  .pending-card h4 { font-size: .9rem; font-weight: 700; margin-bottom: 3px; }
+  .pending-card .meta { font-size: .75rem; color: var(--muted); }
+  .pending-card .desc { font-size: .81rem; color: var(--muted); margin-bottom: 14px; line-height: 1.5; }
+  .pending-card .actions { display: flex; gap: 8px; }
+  .pending-card .actions button { flex: 1; padding: 9px; border-radius: 8px; font-size: .8rem; font-weight: 600; border: none; cursor: pointer; transition: all .2s; }
+
+  .order-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 14px; }
+  .order-card .oh { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px; }
+  .order-card h4 { font-size: .92rem; font-weight: 700; }
+  .order-card .om { font-size: .78rem; color: var(--muted); margin-top: 4px; }
+  .order-card .ob { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .order-card .od { font-size: .8rem; }
+  .order-card .od .k { color: var(--muted); font-size: .72rem; margin-bottom: 2px; }
+  .order-card .cn { margin-top: 12px; padding: 10px 14px; background: rgba(255,107,43,.06); border-left: 3px solid var(--accent); border-radius: 6px; font-size: .78rem; }
+
+  .status-pill { display: inline-flex; align-items: center; gap: 5px; font-size: .7rem; padding: 3px 10px; border-radius: 99px; font-weight: 600; }
+  .status-approved { background: rgba(34,197,94,.12); color: var(--success); }
+  .status-pending { background: rgba(255,206,0,.1); color: var(--accent2); }
+
+  .toast { position: fixed; bottom: 28px; right: 28px; z-index: 999; background: var(--card2); border: 1px solid var(--border); padding: 13px 20px; border-radius: 12px; font-size: .86rem; transform: translateY(80px); opacity: 0; transition: all .35s; max-width: 300px; box-shadow: 0 8px 32px rgba(0,0,0,.4); }
+  .toast.show { transform: none; opacity: 1; }
+  .toast.success { border-color: var(--success); }
+  .toast.error { border-color: var(--danger); }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty-state .icon { font-size: 2.8rem; margin-bottom: 12px; }
+  .empty-state p { font-size: .9rem; }
+
+  .close-btn { float: right; background: var(--card2); border: 1px solid var(--border); color: var(--muted); width: 30px; height: 30px; border-radius: 99px; cursor: pointer; font-size: .9rem; display: inline-flex; align-items: center; justify-content: center; margin-top: -4px; }
+  .close-btn:hover { background: var(--danger); border-color: var(--danger); color: #fff; }
+  .divider { height: 1px; background: var(--border); margin: 14px 0; }
+
+  .how-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px,1fr)); gap: 14px; }
+  .how-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; }
+  .how-card .ico { font-size: 1.8rem; margin-bottom: 10px; }
+  .how-card h4 { margin-bottom: 7px; font-size: .92rem; }
+  .how-card p { font-size: .82rem; color: var(--muted); line-height: 1.5; }
+
+  .info-notice { background: rgba(255,206,0,.06); border: 1px solid rgba(255,206,0,.2); border-radius: 10px; padding: 13px 16px; margin-bottom: 16px; font-size: .82rem; color: var(--muted); }
+  .firebase-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,160,0,.1); border: 1px solid rgba(255,160,0,.25); border-radius: 99px; padding: 4px 12px; font-size: .72rem; color: #ffa000; margin-left: 10px; }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+  @media (max-width: 580px) {
+    nav { padding: 14px 16px; }
+    .section { padding: 24px 16px; }
+    .form-row { grid-template-columns: 1fr; }
+    .payment-methods { grid-template-columns: 1fr 1fr; }
+    .hero { padding: 44px 16px 36px; }
+    .modal { padding: 22px; }
+    .stats-bar { flex-direction: column; }
+    .stat-item { border-right: none; border-bottom: 1px solid var(--border); }
+    .stat-item:last-child { border-bottom: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner"></div>
+  <p>Connecting to Firebase...</p>
+</div>
+
+<nav>
+  <div class="logo">
+    <span>Uni</span><span>Market</span>
+    <span class="firebase-badge">🔥 Live</span>
+  </div>
+  <div class="nav-links">
+    <button onclick="showScreen('home')" id="nav-home" class="active-nav">🏠 Home</button>
+    <button onclick="showScreen('shop')" id="nav-shop">🛒 Shop</button>
+    <button onclick="showScreen('sell')" id="nav-sell">📦 Sell</button>
+    <button onclick="showScreen('orders')" id="nav-orders">📋 Orders</button>
+    <button onclick="showScreen('admin')" id="nav-admin" class="admin-btn">🔐 Admin <span class="badge" id="pending-badge">0</span></button>
+  </div>
+</nav>
+
+<!-- HOME -->
+<div class="screen active" id="screen-home">
+  <div class="hero">
+    <h1>Your University's<br/><em>Student Marketplace</em></h1>
+    <p>Buy and sell with fellow students — fast, safe, and community-driven. Powered by MTN MoMo, eWallet &amp; bank cards.</p>
+    <div class="hero-btns">
+      <button class="btn btn-primary" onclick="showScreen('shop')">🛍️ Browse Products</button>
+      <button class="btn btn-secondary" onclick="showScreen('sell')">📦 Sell Something</button>
+    </div>
+    <div class="stats-bar">
+      <div class="stat-item"><div class="num" id="stat-products">—</div><div class="lbl">Listed Products</div></div>
+      <div class="stat-item"><div class="num" id="stat-sales">—</div><div class="lbl">Total Sales</div></div>
+      <div class="stat-item"><div class="num" id="stat-commission">—</div><div class="lbl">Uni Commission</div></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-header"><h2>How It <span>Works</span></h2></div>
+    <div class="how-grid">
+      <div class="how-card"><div class="ico">📸</div><h4>1. List Your Product</h4><p>Upload a photo, set a price and describe your item, then submit for admin review.</p></div>
+      <div class="how-card"><div class="ico">✅</div><h4>2. Admin Approves</h4><p>Our admin checks every listing to ensure it's suitable for the student marketplace.</p></div>
+      <div class="how-card"><div class="ico">💳</div><h4>3. Students Pay</h4><p>Buyers pay via MTN MoMo, eWallet, or bank card. The university earns 5% commission.</p></div>
+      <div class="how-card"><div class="ico">🏠</div><h4>4. Get It Delivered</h4><p>The buyer's student ID and campus address are shared with the seller for delivery.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- SHOP -->
+<div class="screen" id="screen-shop">
+  <div class="section">
+    <div class="section-header">
+      <h2>Browse <span>Products</span></h2>
+      <button class="btn btn-primary" onclick="showScreen('sell')">+ Sell Something</button>
+    </div>
+    <div class="search-bar">
+      <input type="text" id="search-input" placeholder="🔍 Search products..." oninput="filterProducts()"/>
+      <select id="cat-filter" onchange="filterProducts()">
+        <option value="">All Categories</option>
+        <option>Books</option><option>Electronics</option><option>Clothing</option>
+        <option>Food</option><option>Services</option><option>Other</option>
+      </select>
+    </div>
+    <div class="product-grid" id="product-grid">
+      <div class="empty-state" style="grid-column:1/-1"><div class="icon">⏳</div><p>Loading products...</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- SELL -->
+<div class="screen" id="screen-sell">
+  <div class="section" style="max-width:620px;">
+    <div class="section-header"><h2>List a <span>Product</span></h2></div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:26px;">
+      <div class="upload-area" onclick="fakeUpload()">
+        <div class="upload-icon" id="upload-icon">📷</div>
+        <p id="upload-text">Click to upload product photo</p>
+      </div>
+      <div class="form-group"><label>Product Name *</label><input type="text" id="prod-name" placeholder="e.g. Engineering Maths Textbook"/></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Category *</label>
+          <select id="prod-cat">
+            <option value="">Select category</option>
+            <option>Books</option><option>Electronics</option><option>Clothing</option>
+            <option>Food</option><option>Services</option><option>Other</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Price (E — Lilangeni) *</label><input type="number" id="prod-price" placeholder="150" min="1"/></div>
+      </div>
+      <div class="form-group"><label>Description *</label><textarea id="prod-desc" rows="3" placeholder="Condition, size, quantity, any relevant details..."></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label>Your Student ID *</label><input type="text" id="seller-id" placeholder="e.g. 20210012345"/></div>
+        <div class="form-group"><label>Your Name</label><input type="text" id="seller-name" placeholder="Full name"/></div>
+      </div>
+      <div class="info-notice">⚠️ Your listing will be reviewed by admin before going live. A <strong>5% commission</strong> is deducted from every sale and goes to the university.</div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="submitProduct()">📤 Submit for Approval</button>
+    </div>
+  </div>
+</div>
+
+<!-- ORDERS -->
+<div class="screen" id="screen-orders">
+  <div class="section">
+    <div class="section-header"><h2>My <span>Orders</span></h2></div>
+    <div id="orders-list"><div class="empty-state"><div class="icon">⏳</div><p>Loading orders...</p></div></div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div class="screen" id="screen-admin">
+  <div class="section">
+    <div class="section-header">
+      <h2>🔐 Admin <span>Panel</span></h2>
+      <span style="font-size:.8rem;color:var(--muted);">UniMarket Eswatini — Control Centre</span>
+    </div>
+    <div class="admin-stats">
+      <div class="admin-stat pending-s"><div class="num" id="admin-pending-count">—</div><div class="lbl">⏳ Pending</div></div>
+      <div class="admin-stat"><div class="num" id="admin-approved-count">—</div><div class="lbl">✅ Approved</div></div>
+      <div class="admin-stat"><div class="num" id="admin-sales-count">—</div><div class="lbl">🛒 Sales</div></div>
+      <div class="admin-stat revenue"><div class="num" id="admin-commission-total">—</div><div class="lbl">💰 Commission</div></div>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('pending-tab',this)">⏳ Pending <span class="badge" id="tab-pending-badge">0</span></button>
+      <button class="tab-btn" onclick="switchTab('approved-tab',this)">✅ Approved</button>
+      <button class="tab-btn" onclick="switchTab('orders-tab',this)">📦 All Orders</button>
+    </div>
+    <div class="tab-content active" id="pending-tab"><div class="admin-grid" id="pending-list"></div></div>
+    <div class="tab-content" id="approved-tab"><div class="admin-grid" id="approved-list"></div></div>
+    <div class="tab-content" id="orders-tab"><div id="admin-orders-list"></div></div>
+  </div>
+</div>
+
+<!-- BUY MODAL -->
+<div class="modal-overlay" id="buy-modal">
+  <div class="modal">
+    <button class="close-btn" onclick="closeModal('buy-modal')">✕</button>
+    <h3>Buy: <span id="buy-product-name">Product</span></h3>
+    <div class="commission-box">
+      <div class="row"><span class="label">Product Price</span><span class="val" id="cp-price">E0</span></div>
+      <div class="row"><span class="label">UniMarket Commission (5%)</span><span class="val" id="cp-commission">E0</span></div>
+      <div class="divider"></div>
+      <div class="row"><span class="label">You Pay</span><span class="val" id="cp-total" style="color:var(--text);">E0</span></div>
+      <div class="row"><span class="label">Seller Receives</span><span class="val" id="cp-seller">E0</span></div>
+    </div>
+    <h4 style="margin-bottom:10px;font-size:.88rem;">💳 Payment Method</h4>
+    <div class="payment-methods">
+      <div class="pay-option selected" onclick="selectPayment(this,'mtn')"><div class="pay-icon">📱</div><div class="pay-name">MTN MoMo</div><div class="pay-sub">Mobile Money</div></div>
+      <div class="pay-option" onclick="selectPayment(this,'ewallet')"><div class="pay-icon">💳</div><div class="pay-name">eWallet</div><div class="pay-sub">Eswatini</div></div>
+      <div class="pay-option" onclick="selectPayment(this,'card')"><div class="pay-icon">🏦</div><div class="pay-name">Bank Card</div><div class="pay-sub">Visa/Mastercard</div></div>
+    </div>
+    <div id="payment-mtn"><div class="form-group"><label>MTN Mobile Number *</label><input type="tel" id="mtn-number" placeholder="76XXXXXX"/></div></div>
+    <div id="payment-ewallet" style="display:none;"><div class="form-group"><label>eWallet Number *</label><input type="tel" id="ewallet-number" placeholder="78XXXXXX"/></div></div>
+    <div id="payment-card" style="display:none;">
+      <div class="form-group"><label>Card Number *</label><input type="text" id="card-number" placeholder="1234 5678 9012 3456" maxlength="19"/></div>
+      <div class="form-row">
+        <div class="form-group"><label>Expiry (MM/YY)</label><input type="text" id="card-expiry" placeholder="12/27" maxlength="5"/></div>
+        <div class="form-group"><label>CVV</label><input type="password" id="card-cvv" placeholder="•••" maxlength="3"/></div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <h4 style="margin-bottom:10px;font-size:.88rem;">🎓 Student &amp; Delivery Info</h4>
+    <div class="form-row">
+      <div class="form-group"><label>Student ID *</label><input type="text" id="buyer-student-id" placeholder="20220054321"/></div>
+      <div class="form-group"><label>Full Name *</label><input type="text" id="buyer-name" placeholder="Your full name"/></div>
+    </div>
+    <div class="form-group"><label>Delivery Address (Campus) *</label><textarea id="buyer-address" rows="2" placeholder="e.g. Room 14, Block C, Luyengo Campus"></textarea></div>
+    <div class="form-group"><label>Phone Number</label><input type="tel" id="buyer-phone" placeholder="76XXXXXX"/></div>
+    <button class="btn btn-success" style="width:100%;justify-content:center;margin-top:8px;" onclick="confirmPurchase()">✅ Confirm &amp; Pay</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- FIREBASE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, getDocs, doc,
+    updateDoc, query, where, orderBy, onSnapshot, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCscviXmjLP2yUgOpnNZu0r2WjW_YZR_jE",
+    authDomain: "unimarket-eswatini.firebaseapp.com",
+    projectId: "unimarket-eswatini",
+    storageBucket: "unimarket-eswatini.firebasestorage.app",
+    messagingSenderId: "165977181105",
+    appId: "1:165977181105:web:9b62a65bb4ea12e66b4b90",
+    measurementId: "G-P7K712HNH5"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const COMMISSION_RATE = 0.05;
+  const EMOJIS = { Books:'📚', Electronics:'💻', Clothing:'👗', Food:'🍱', Services:'🛠️', Other:'📦' };
+
+  let allProducts = [];
+  let allOrders = [];
+  let selectedPayment = 'mtn';
+  let buyingProduct = null;
+
+  // Hide loading once Firebase is ready
+  document.getElementById('loading-overlay').classList.add('hidden');
+
+  // ── REAL-TIME LISTENERS ──────────────────────────────────
+  onSnapshot(collection(db, 'products'), snap => {
+    allProducts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    updateBadge();
+    updateHomeStats();
+    const activeScreen = document.querySelector('.screen.active')?.id;
+    if (activeScreen === 'screen-shop') renderShop();
+    if (activeScreen === 'screen-admin') renderAdmin();
+  });
+
+  onSnapshot(collection(db, 'orders'), snap => {
+    allOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    updateHomeStats();
+    const activeScreen = document.querySelector('.screen.active')?.id;
+    if (activeScreen === 'screen-orders') renderMyOrders();
+    if (activeScreen === 'screen-admin') renderAdmin();
+  });
+
+  // ── SCREENS ──────────────────────────────────────────────
+  window.showScreen = function(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-links button').forEach(b => b.classList.remove('active-nav'));
+    document.getElementById('screen-' + name).classList.add('active');
+    document.getElementById('nav-' + name).classList.add('active-nav');
+    if (name === 'shop') renderShop();
+    if (name === 'admin') renderAdmin();
+    if (name === 'orders') renderMyOrders();
+    if (name === 'home') updateHomeStats();
+  }
+
+  window.switchTab = function(tabId, btn) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // ── TOAST ─────────────────────────────────────────────────
+  window.showToast = function(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + type;
+    setTimeout(() => t.className = 'toast', 3400);
+  }
+
+  // ── UPLOAD ────────────────────────────────────────────────
+  window.fakeUpload = function() {
+    document.getElementById('upload-icon').textContent = '✅';
+    document.getElementById('upload-text').textContent = 'Photo uploaded successfully!';
+    showToast('📷 Photo uploaded!');
+  }
+
+  // ── SUBMIT PRODUCT ────────────────────────────────────────
+  window.submitProduct = async function() {
+    const name = document.getElementById('prod-name').value.trim();
+    const cat = document.getElementById('prod-cat').value;
+    const price = parseFloat(document.getElementById('prod-price').value);
+    const desc = document.getElementById('prod-desc').value.trim();
+    const sellerId = document.getElementById('seller-id').value.trim();
+    const sellerName = document.getElementById('seller-name').value.trim();
+
+    if (!name || !cat || !price || price <= 0 || !desc || !sellerId) {
+      showToast('⚠️ Please fill in all required fields.', 'error'); return;
+    }
+
+    try {
+      await addDoc(collection(db, 'products'), {
+        name, cat, price, desc, sellerId,
+        sellerName: sellerName || 'Anonymous Student',
+        status: 'pending',
+        createdAt: serverTimestamp()
+      });
+      ['prod-name','prod-price','prod-desc','seller-id','seller-name'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('prod-cat').value = '';
+      document.getElementById('upload-icon').textContent = '📷';
+      document.getElementById('upload-text').textContent = 'Click to upload product photo';
+      showToast('📤 Submitted! Awaiting admin approval.');
+    } catch(e) {
+      showToast('❌ Error saving product. Check Firestore rules.', 'error');
+      console.error(e);
+    }
+  }
+
+  // ── SHOP ──────────────────────────────────────────────────
+  function renderShop() {
+    const approved = allProducts.filter(p => p.status === 'approved');
+    const search = document.getElementById('search-input').value.toLowerCase();
+    const cat = document.getElementById('cat-filter').value;
+    const filtered = approved.filter(p =>
+      (!search || p.name.toLowerCase().includes(search) || p.desc.toLowerCase().includes(search)) &&
+      (!cat || p.cat === cat)
+    );
+    const grid = document.getElementById('product-grid');
+    if (!filtered.length) {
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="icon">🛍️</div><p>${approved.length ? 'No products match your search.' : 'No approved products yet. Be the first to sell!'}</p></div>`;
+      return;
+    }
+    grid.innerHTML = filtered.map(p => `
+      <div class="product-card" onclick="openBuyModal('${p.id}')">
+        <div class="product-img">${EMOJIS[p.cat]||'📦'}<span class="commission-tag">5% fee</span></div>
+        <div class="product-info">
+          <h4>${p.name}</h4>
+          <div class="seller">by ${p.sellerName} &middot; ${p.sellerId}</div>
+          <div class="price">E ${parseFloat(p.price).toFixed(2)}</div>
+          <div class="cat-tag">${p.cat}</div>
+          <div style="margin-top:12px;">
+            <button class="btn btn-primary" style="width:100%;justify-content:center;padding:9px 16px;font-size:.82rem;" onclick="event.stopPropagation();openBuyModal('${p.id}')">Buy Now</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  window.filterProducts = function() { renderShop(); }
+
+  // ── BUY MODAL ─────────────────────────────────────────────
+  window.openBuyModal = function(productId) {
+    buyingProduct = allProducts.find(p => p.id === productId);
+    if (!buyingProduct) return;
+    const comm = +(buyingProduct.price * COMMISSION_RATE).toFixed(2);
+    document.getElementById('buy-product-name').textContent = buyingProduct.name;
+    document.getElementById('cp-price').textContent = `E ${parseFloat(buyingProduct.price).toFixed(2)}`;
+    document.getElementById('cp-commission').textContent = `E ${comm.toFixed(2)}`;
+    document.getElementById('cp-total').textContent = `E ${parseFloat(buyingProduct.price).toFixed(2)}`;
+    document.getElementById('cp-seller').textContent = `E ${(buyingProduct.price - comm).toFixed(2)}`;
+    selectPayment(document.querySelector('.pay-option'), 'mtn');
+    ['mtn-number','ewallet-number','card-number','card-expiry','card-cvv','buyer-student-id','buyer-name','buyer-address','buyer-phone'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    document.getElementById('buy-modal').classList.add('open');
+  }
+
+  window.closeModal = function(id) { document.getElementById(id).classList.remove('open'); }
+
+  window.selectPayment = function(el, method) {
+    document.querySelectorAll('.pay-option').forEach(p => p.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedPayment = method;
+    ['mtn','ewallet','card'].forEach(m => {
+      document.getElementById('payment-' + m).style.display = m === method ? 'block' : 'none';
+    });
+  }
+
+  window.confirmPurchase = async function() {
+    const studentId = document.getElementById('buyer-student-id').value.trim();
+    const address = document.getElementById('buyer-address').value.trim();
+    const buyerName = document.getElementById('buyer-name').value.trim();
+    if (!studentId || !address || !buyerName) { showToast('⚠️ Student ID, name and address are required.', 'error'); return; }
+    if (selectedPayment === 'mtn' && !document.getElementById('mtn-number').value.trim()) { showToast('⚠️ Enter your MTN number.', 'error'); return; }
+    if (selectedPayment === 'ewallet' && !document.getElementById('ewallet-number').value.trim()) { showToast('⚠️ Enter your eWallet number.', 'error'); return; }
+    if (selectedPayment === 'card' && !document.getElementById('card-number').value.trim()) { showToast('⚠️ Enter your card number.', 'error'); return; }
+
+    const comm = +(buyingProduct.price * COMMISSION_RATE).toFixed(2);
+    try {
+      await addDoc(collection(db, 'orders'), {
+        productId: buyingProduct.id,
+        productName: buyingProduct.name,
+        productPrice: buyingProduct.price,
+        commission: comm,
+        sellerGets: +(buyingProduct.price - comm).toFixed(2),
+        sellerName: buyingProduct.sellerName,
+        sellerId: buyingProduct.sellerId,
+        buyerName, buyerStudentId: studentId,
+        deliveryAddress: address,
+        paymentMethod: selectedPayment,
+        placedAt: serverTimestamp()
+      });
+      closeModal('buy-modal');
+      showToast('🎉 Purchase confirmed! Seller will deliver to your address.');
+      showScreen('orders');
+    } catch(e) {
+      showToast('❌ Error placing order. Try again.', 'error');
+      console.error(e);
+    }
+  }
+
+  // ── MY ORDERS ─────────────────────────────────────────────
+  function renderMyOrders() {
+    const list = document.getElementById('orders-list');
+    if (!allOrders.length) { list.innerHTML = `<div class="empty-state"><div class="icon">📋</div><p>No orders yet. Go browse the shop!</p></div>`; return; }
+    const sorted = [...allOrders].sort((a,b) => (b.placedAt?.seconds||0) - (a.placedAt?.seconds||0));
+    list.innerHTML = sorted.map(o => `
+      <div class="order-card">
+        <div class="oh">
+          <div><h4>${o.productName}</h4><div class="om">${o.placedAt?.toDate?.()?.toLocaleString?.() || 'Just now'} &middot; via ${o.paymentMethod?.toUpperCase()}</div></div>
+          <span class="status-pill status-approved">✅ Paid</span>
+        </div>
+        <div class="ob">
+          <div class="od"><div class="k">Amount Paid</div>E ${parseFloat(o.productPrice).toFixed(2)}</div>
+          <div class="od"><div class="k">Payment</div>${o.paymentMethod?.toUpperCase()}</div>
+          <div class="od"><div class="k">Student ID</div>${o.buyerStudentId}</div>
+          <div class="od"><div class="k">Buyer</div>${o.buyerName}</div>
+          <div class="od" style="grid-column:1/-1"><div class="k">Delivery Address</div>${o.deliveryAddress}</div>
+        </div>
+        <div class="cn">🏫 Commission: <strong>E ${parseFloat(o.commission).toFixed(2)}</strong> &nbsp;·&nbsp; Seller receives: <strong>E ${parseFloat(o.sellerGets).toFixed(2)}</strong></div>
+      </div>
+    `).join('');
+  }
+
+  // ── ADMIN ─────────────────────────────────────────────────
+  function renderAdmin() {
+    const pending = allProducts.filter(p => p.status === 'pending');
+    const approved = allProducts.filter(p => p.status === 'approved');
+    const totalComm = allOrders.reduce((a, o) => a + (parseFloat(o.commission)||0), 0);
+
+    document.getElementById('admin-pending-count').textContent = pending.length;
+    document.getElementById('admin-approved-count').textContent = approved.length;
+    document.getElementById('admin-sales-count').textContent = allOrders.length;
+    document.getElementById('admin-commission-total').textContent = `E${totalComm.toFixed(2)}`;
+
+    document.getElementById('pending-list').innerHTML = pending.length ? pending.map(p => `
+      <div class="pending-card">
+        <div class="ph"><div class="emoji">${EMOJIS[p.cat]||'📦'}</div>
+        <div><h4>${p.name}</h4><div class="meta">E ${parseFloat(p.price).toFixed(2)} &middot; ${p.cat}</div><div class="meta">${p.sellerName} (${p.sellerId})</div></div></div>
+        <div class="desc">${p.desc}</div>
+        <div class="actions">
+          <button class="btn-success" onclick="approveProduct('${p.id}')">✅ Approve</button>
+          <button class="btn-danger" onclick="rejectProduct('${p.id}')">❌ Reject</button>
+        </div>
+      </div>
+    `).join('') : `<div class="empty-state" style="grid-column:1/-1"><div class="icon">✅</div><p>No pending items — all clear!</p></div>`;
+
+    document.getElementById('approved-list').innerHTML = approved.length ? approved.map(p => `
+      <div class="pending-card">
+        <div class="ph"><div class="emoji">${EMOJIS[p.cat]||'📦'}</div>
+        <div><h4>${p.name}</h4><div class="meta">E ${parseFloat(p.price).toFixed(2)} &middot; ${p.cat}</div><div class="meta">${p.sellerName} (${p.sellerId})</div></div></div>
+        <span class="status-pill status-approved" style="margin-bottom:12px;display:inline-flex;">✅ Live</span>
+        <div class="actions" style="margin-top:12px;">
+          <button class="btn-danger" onclick="removeProduct('${p.id}')">🗑 Remove</button>
+        </div>
+      </div>
+    `).join('') : `<div class="empty-state" style="grid-column:1/-1"><div class="icon">📦</div><p>No approved listings yet.</p></div>`;
+
+    document.getElementById('admin-orders-list').innerHTML = allOrders.length ? [...allOrders].sort((a,b)=>(b.placedAt?.seconds||0)-(a.placedAt?.seconds||0)).map(o => `
+      <div class="order-card">
+        <div class="oh">
+          <div><h4>${o.productName}</h4><div class="om">${o.placedAt?.toDate?.()?.toLocaleString?.() || 'Just now'} &middot; via ${o.paymentMethod?.toUpperCase()}</div></div>
+          <span class="status-pill status-approved">✅ Paid</span>
+        </div>
+        <div class="ob">
+          <div class="od"><div class="k">Buyer</div>${o.buyerName} (${o.buyerStudentId})</div>
+          <div class="od"><div class="k">Seller</div>${o.sellerName} (${o.sellerId})</div>
+          <div class="od" style="grid-column:1/-1"><div class="k">Delivery Address</div>${o.deliveryAddress}</div>
+          <div class="od"><div class="k">Product Price</div>E ${parseFloat(o.productPrice).toFixed(2)}</div>
+          <div class="od"><div class="k">Commission (5%)</div>E ${parseFloat(o.commission).toFixed(2)}</div>
+          <div class="od"><div class="k">Seller Receives</div>E ${parseFloat(o.sellerGets).toFixed(2)}</div>
+        </div>
+      </div>
+    `).join('') : `<div class="empty-state"><div class="icon">🛒</div><p>No orders placed yet.</p></div>`;
+  }
+
+  window.approveProduct = async function(id) {
+    try {
+      await updateDoc(doc(db, 'products', id), { status: 'approved' });
+      showToast('✅ Product approved and listed!');
+    } catch(e) { showToast('❌ Error updating product.', 'error'); console.error(e); }
+  }
+
+  window.rejectProduct = async function(id) {
+    try {
+      await updateDoc(doc(db, 'products', id), { status: 'rejected' });
+      showToast('❌ Product rejected.', 'error');
+    } catch(e) { showToast('❌ Error updating product.', 'error'); console.error(e); }
+  }
+
+  window.removeProduct = async function(id) {
+    try {
+      await updateDoc(doc(db, 'products', id), { status: 'rejected' });
+      showToast('🗑 Listing removed.', 'error');
+    } catch(e) { showToast('❌ Error removing product.', 'error'); console.error(e); }
+  }
+
+  function updateBadge() {
+    const n = allProducts.filter(p => p.status === 'pending').length;
+    document.getElementById('pending-badge').textContent = n;
+    document.getElementById('tab-pending-badge').textContent = n;
+  }
+
+  function updateHomeStats() {
+    document.getElementById('stat-products').textContent = allProducts.filter(p => p.status === 'approved').length;
+    document.getElementById('stat-sales').textContent = allOrders.length;
+    document.getElementById('stat-commission').textContent = `E${allOrders.reduce((a,o)=>a+(parseFloat(o.commission)||0),0).toFixed(2)}`;
+  }
+</script>
+</body>
+</html>
